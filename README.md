@@ -80,7 +80,7 @@ Set GPIO to use with UART.
 
 - Connect ESP32 and AtMega328 using wire cable   
 
-|AtMega328||ESP32|ESP32-S2|ESP32-C3|
+|AtMega328||ESP32|ESP32-S2/S3|ESP32-C3|
 |:-:|:-:|:-:|:-:|:-:|
 |TX|--|GPIO16|GPIO34|GPIO18|
 |RX|--|GPIO17|GPIO35|GPIO19|
