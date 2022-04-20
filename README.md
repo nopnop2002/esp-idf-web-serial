@@ -107,6 +107,6 @@ http://esp32-server.local/
 
 ![Web-Serial](https://user-images.githubusercontent.com/6020549/164257652-d5c52442-7168-4069-8e0b-cd04f1b2cb83.jpg)
 
-# WEB Page
-WEB Page is stored in the html folder.   
+# WEB Pages
+WEB Pages are stored in the html folder.   
 You cam change root.html as you like.   
