@@ -1,7 +1,7 @@
 # esp-idf-web-serial
 
 This project is a Serial Monitor for esp-idf that can be accessed remotely via a web browser.   
-Webpage is stored in program memory of ESP32.   
+Webpage are stored in program memory of ESP32.   
 
 ![Web-Serial](https://user-images.githubusercontent.com/6020549/164257652-d5c52442-7168-4069-8e0b-cd04f1b2cb83.jpg)
 
@@ -73,7 +73,7 @@ Set the information of your time zone.
 ![config-ntp](https://user-images.githubusercontent.com/6020549/164256796-cf851736-2a8e-400f-b809-992aa2ff867e.jpg)
 
 
-Select GPIO to use with UART.
+Set GPIO to use with UART.
 
 ![config-uart](https://user-images.githubusercontent.com/6020549/164256738-0f59817b-0deb-41b5-a4e5-379cbe3c2574.jpg)
 
