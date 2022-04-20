@@ -93,7 +93,7 @@ __You can change it to any pin using menuconfig.__
 idf.py flash monitor
 ```
 
-- Launch a web browser 
+- Launch a web browser   
 Enter the following in the address bar of your web browser.   
 
 ```
