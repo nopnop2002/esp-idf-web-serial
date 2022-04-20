@@ -78,7 +78,8 @@ Select GPIO to use with UART.
 ![config-uart](https://user-images.githubusercontent.com/6020549/164256738-0f59817b-0deb-41b5-a4e5-379cbe3c2574.jpg)
 
 
-- Connect ESP32 and AtMega328 using wire cable.
+- Connect ESP32 and AtMega328 using wire cable   
+
 |AtMega328||ESP32|ESP32-S2|ESP32-C3|
 |:-:|:-:|:-:|:-:|:-:|
 |TX|--|GPIO16|GPIO34|GPIO18|
