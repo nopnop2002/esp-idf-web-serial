@@ -10,7 +10,7 @@ I referred to [this](https://github.com/ayushsharma82/WebSerial).
 
 
 # Software requirements
-esp-idf v4.4 or later.   
+esp-idf v4.4/v5.0.   
 This is because this version supports ESP32-C3.   
 
 

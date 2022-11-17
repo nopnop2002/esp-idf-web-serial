@@ -7,6 +7,7 @@
 */
 
 #include <stdio.h>
+#include <inttypes.h>
 #include <time.h>
 #include <string.h>
 
@@ -206,10 +207,10 @@ void websocket_callback(uint8_t num,WEBSOCKET_TYPE_t type,char* msg,uint64_t len
 			}
 			break;
 		case WEBSOCKET_BIN:
-			ESP_LOGI(TAG,"client %i sent binary message of size %i:\n%s",num,(uint32_t)len,msg);
+			ESP_LOGI(TAG,"client %i sent binary message of size %"PRIu32":\n%s",num,(uint32_t)len,msg);
 			break;
 		case WEBSOCKET_PING:
-			ESP_LOGI(TAG,"client %i pinged us with message of size %i:\n%s",num,(uint32_t)len,msg);
+			ESP_LOGI(TAG,"client %i pinged us with message of size %"PRIu32":\n%s",num,(uint32_t)len,msg);
 			break;
 		case WEBSOCKET_PONG:
 			ESP_LOGI(TAG,"client %i responded to the ping",num);
