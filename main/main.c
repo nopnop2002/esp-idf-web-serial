@@ -405,7 +405,9 @@ void uart_init(void) {
 		.parity = UART_PARITY_DISABLE,
 		.stop_bits = UART_STOP_BITS_1,
 		.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-		.source_clk = UART_SCLK_APB,
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+		.source_clk = UART_SCLK_DEFAULT,
+#endif
 	};
 	// We won't use a buffer for sending data.
 	uart_driver_install(UART_NUM_1, RX_BUF_SIZE * 2, 0, 0, NULL, 0);
@@ -569,6 +571,7 @@ void app_main() {
 				time_t now;
 				struct tm *tm_now;
 				now = time(NULL);
+				now = now + (CONFIG_LOCAL_TIMEZONE*60*60);
 				tm_now = localtime(&now);
 				ESP_LOGD(TAG, "DATE %04d/%02d/%02d", tm_now->tm_year + 1900, tm_now->tm_mon + 1, tm_now->tm_mday);
 				ESP_LOGD(TAG, "TIME %02d:%02d:%02d", tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec);

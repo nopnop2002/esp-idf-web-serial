@@ -3,15 +3,14 @@
 This project is a Serial Monitor for esp-idf that can be accessed remotely via a web browser.   
 Webpage are stored in program memory of ESP32.   
 
-![Web-Serial](https://user-images.githubusercontent.com/6020549/164257652-d5c52442-7168-4069-8e0b-cd04f1b2cb83.jpg)
-
+![Web-Serial](https://user-images.githubusercontent.com/6020549/204442158-0e8e1b11-caa8-4937-b830-99d331ca3fa6.jpg)
 
 I referred to [this](https://github.com/ayushsharma82/WebSerial).
 
 
 # Software requirements
-esp-idf v4.4/v5.0.   
-This is because this version supports ESP32-C3.   
+ESP-IDF V4.4/V5.0.   
+ESP-IDF V5 is required when using ESP32-C2.   
 
 
 # How to Install
@@ -80,10 +79,10 @@ Set GPIO to use with UART.
 
 - Connect ESP32 and AtMega328 using wire cable   
 
-|AtMega328||ESP32|ESP32-S2/S3|ESP32-C3|
+|AtMega328||ESP32|ESP32-S2/S3|ESP32-C2/C3|
 |:-:|:-:|:-:|:-:|:-:|
-|TX|--|GPIO16|GPIO34|GPIO18|
-|RX|--|GPIO17|GPIO35|GPIO19|
+|TX|--|GPIO16|GPIO34|GPIO0|
+|RX|--|GPIO17|GPIO35|GPIO1|
 |GND|--|GND|GND|GND|
 
 __You can change it to any pin using menuconfig.__   
@@ -105,7 +104,7 @@ http://esp32-server.local/
 
 - You can communicate to Arduino-UNO
 
-![Web-Serial](https://user-images.githubusercontent.com/6020549/164257652-d5c52442-7168-4069-8e0b-cd04f1b2cb83.jpg)
+![Web-Serial](https://user-images.githubusercontent.com/6020549/204442158-0e8e1b11-caa8-4937-b830-99d331ca3fa6.jpg)
 
 # WEB Pages
 WEB Pages are stored in the html folder.   
