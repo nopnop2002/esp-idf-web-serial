@@ -407,6 +407,8 @@ void uart_init(void) {
 		.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
 		.source_clk = UART_SCLK_DEFAULT,
+#else
+		.source_clk = UART_SCLK_APB,
 #endif
 	};
 	// We won't use a buffer for sending data.
