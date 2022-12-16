@@ -55,7 +55,7 @@ git clone https://github.com/Molorius/esp32-websocket components/websocket
 
 - Configuration of esp-idf
 ```
-idf.py set-target {esp32/esp32s2/esp32s3/esp32c3}
+idf.py set-target {esp32/esp32s2/esp32s3/esp32c2/esp32c3}
 idf.py menuconfig
 ```
 ![config-top](https://user-images.githubusercontent.com/6020549/164256546-da988299-c0ff-41e0-8c5a-45cdd11f9fe7.jpg)
