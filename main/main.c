@@ -27,6 +27,12 @@
 
 #include "websocket_server.h"
 
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+#define sntp_setoperatingmode esp_sntp_setoperatingmode
+#define sntp_setservername esp_sntp_setservername
+#define sntp_init esp_sntp_init
+#endif
+
 static QueueHandle_t client_queue;
 MessageBufferHandle_t xMessageBufferMain;
 MessageBufferHandle_t xMessageBufferUart;
@@ -507,7 +513,7 @@ static void uart_rx_task(void* pvParameters)
 }
 
 void app_main() {
-	//Initialize NVS
+	// Initialize NVS
 	esp_err_t ret = nvs_flash_init();
 	if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
 		ESP_ERROR_CHECK(nvs_flash_erase());
@@ -515,8 +521,10 @@ void app_main() {
 	}
 	ESP_ERROR_CHECK(ret);
 
-	ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
+	// Initialize WiFi
 	wifi_init_sta();
+
+	// Initialize mdns
 	initialise_mdns();
 
 	// Get current time
@@ -528,7 +536,7 @@ void app_main() {
 		}
 	}
 
-	// uart initialize
+	// Initialize uart
 	uart_init();
 
 	xMessageBufferMain = xMessageBufferCreate(1024);
@@ -536,7 +544,7 @@ void app_main() {
 	xMessageBufferUart = xMessageBufferCreate(1024);
 	configASSERT( xMessageBufferUart );
 
-	/* Get the local IP address */
+	// Get the local IP address
 	esp_netif_ip_info_t ip_info;
 	ESP_ERROR_CHECK(esp_netif_get_ip_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), &ip_info));
 	char cparam0[64];
