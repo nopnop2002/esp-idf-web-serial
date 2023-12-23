@@ -7,6 +7,7 @@ menu "Application Configuration"
 		default 48 if IDF_TARGET_ESP32S3
 		default 18 if IDF_TARGET_ESP32C2
 		default 19 if IDF_TARGET_ESP32C3
+		default 30 if IDF_TARGET_ESP32C6
 
 	menu "WiFi Setting"
 
@@ -61,7 +62,7 @@ menu "Application Configuration"
 			range 0 GPIO_RANGE_MAX
 			default 17 if IDF_TARGET_ESP32
 			default 35 if IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32S3
-			default  1 if IDF_TARGET_ESP32C3 || IDF_TARGET_ESP32C2
+			default  1 # C3 and others
 			help
 				GPIO number (IOxx) to UART TX.
 				Some GPIOs are used for other purposes (flash connections, etc.).
@@ -72,7 +73,7 @@ menu "Application Configuration"
 			range 0 GPIO_RANGE_MAX
 			default 16 if IDF_TARGET_ESP32
 			default 34 if IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32S3
-			default  0 if IDF_TARGET_ESP32C3 || IDF_TARGET_ESP32C2
+			default  0 # C3 and others
 			help
 				GPIO number (IOxx) to UART RX.
 				Some GPIOs are used for other purposes (flash connections, etc.).
