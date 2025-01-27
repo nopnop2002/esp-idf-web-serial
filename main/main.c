@@ -1,5 +1,5 @@
 /*
-	Serial monitor client example using WEB Socket.
+	Serial monitor client using WEB Socket.
 
 	This example code is in the Public Domain (or CC0 licensed, at your option.)
 	Unless required by applicable law or agreed to in writing, this
@@ -17,13 +17,13 @@
 #include "freertos/queue.h"
 #include "freertos/event_groups.h"
 #include "freertos/message_buffer.h"
-
-#include "esp_wifi.h"
 #include "esp_log.h"
+#include "esp_wifi.h"
+#include "esp_event.h"
 #include "nvs_flash.h"
+#include "mdns.h"
 #include "cJSON.h"
 #include "esp_sntp.h"
-#include "mdns.h"
 #include "driver/uart.h"
 
 #include "websocket_server.h"
@@ -34,11 +34,8 @@
 #define sntp_init esp_sntp_init
 #endif
 
-static QueueHandle_t client_queue;
-MessageBufferHandle_t xMessageBufferMain;
-MessageBufferHandle_t xMessageBufferUart;
-
-const static int client_queue_size = 10;
+MessageBufferHandle_t xMessageBufferToClient;
+MessageBufferHandle_t xMessageBufferToUart;
 
 /* FreeRTOS event group to signal when we are connected*/
 static EventGroupHandle_t s_wifi_event_group;
@@ -187,223 +184,6 @@ static esp_err_t obtain_time(void)
 	return ESP_OK;
 }
 
-
-// handles websocket events
-void websocket_callback(uint8_t num,WEBSOCKET_TYPE_t type,char* msg,uint64_t len) {
-	const static char* TAG = "websocket_callback";
-	//int value;
-
-	switch(type) {
-		case WEBSOCKET_CONNECT:
-			ESP_LOGI(TAG,"client %i connected!",num);
-			break;
-		case WEBSOCKET_DISCONNECT_EXTERNAL:
-			ESP_LOGI(TAG,"client %i sent a disconnect message",num);
-			break;
-		case WEBSOCKET_DISCONNECT_INTERNAL:
-			ESP_LOGI(TAG,"client %i was disconnected",num);
-			break;
-		case WEBSOCKET_DISCONNECT_ERROR:
-			ESP_LOGI(TAG,"client %i was disconnected due to an error",num);
-			break;
-		case WEBSOCKET_TEXT:
-			if(len) { // if the message length was greater than zero
-				ESP_LOGI(TAG, "got message length %i: %s", (int)len, msg);
-				size_t xBytesSent = xMessageBufferSend(xMessageBufferMain, msg, len, portMAX_DELAY);
-				if (xBytesSent != len) {
-					ESP_LOGE(TAG, "xMessageBufferSend fail");
-				}
-			}
-			break;
-		case WEBSOCKET_BIN:
-			ESP_LOGI(TAG,"client %i sent binary message of size %"PRIu32":\n%s",num,(uint32_t)len,msg);
-			break;
-		case WEBSOCKET_PING:
-			ESP_LOGI(TAG,"client %i pinged us with message of size %"PRIu32":\n%s",num,(uint32_t)len,msg);
-			break;
-		case WEBSOCKET_PONG:
-			ESP_LOGI(TAG,"client %i responded to the ping",num);
-			break;
-	}
-}
-
-// serves any clients
-static void http_serve(struct netconn *conn) {
-	const static char* TAG = "http_server";
-	const static char HTML_HEADER[] = "HTTP/1.1 200 OK\nContent-type: text/html\n\n";
-	const static char ERROR_HEADER[] = "HTTP/1.1 404 Not Found\nContent-type: text/html\n\n";
-	const static char JS_HEADER[] = "HTTP/1.1 200 OK\nContent-type: text/javascript\n\n";
-	//const static char CSS_HEADER[] = "HTTP/1.1 200 OK\nContent-type: text/css\n\n";
-	//const static char PNG_HEADER[] = "HTTP/1.1 200 OK\nContent-type: image/png\n\n";
-	const static char ICO_HEADER[] = "HTTP/1.1 200 OK\nContent-type: image/x-icon\n\n";
-	//const static char PDF_HEADER[] = "HTTP/1.1 200 OK\nContent-type: application/pdf\n\n";
-	//const static char EVENT_HEADER[] = "HTTP/1.1 200 OK\nContent-Type: text/event-stream\nCache-Control: no-cache\nretry: 3000\n\n";
-	struct netbuf* inbuf;
-	static char* buf;
-	static uint16_t buflen;
-	static err_t err;
-
-	// default page
-	extern const uint8_t root_html_start[] asm("_binary_root_html_start");
-	extern const uint8_t root_html_end[] asm("_binary_root_html_end");
-	const uint32_t root_html_len = root_html_end - root_html_start;
-
-	// main.js
-	extern const uint8_t main_js_start[] asm("_binary_main_js_start");
-	extern const uint8_t main_js_end[] asm("_binary_main_js_end");
-	const uint32_t main_js_len = main_js_end - main_js_start;
-
-#if 0
-	// bulma.css
-	extern const uint8_t bulma_css_start[] asm("_binary_bulma_css_start");
-	extern const uint8_t bulma_css_end[] asm("_binary_bulma_css_end");
-	const uint32_t bulma_css_len = bulma_css_end - bulma_css_start;
-#endif
-
-	// favicon.ico
-	extern const uint8_t favicon_ico_start[] asm("_binary_favicon_ico_start");
-	extern const uint8_t favicon_ico_end[] asm("_binary_favicon_ico_end");
-	const uint32_t favicon_ico_len = favicon_ico_end - favicon_ico_start;
-
-	// error page
-	extern const uint8_t error_html_start[] asm("_binary_error_html_start");
-	extern const uint8_t error_html_end[] asm("_binary_error_html_end");
-	const uint32_t error_html_len = error_html_end - error_html_start;
-
-	netconn_set_recvtimeout(conn,1000); // allow a connection timeout of 1 second
-	ESP_LOGI(TAG,"reading from client...");
-	err = netconn_recv(conn, &inbuf);
-	ESP_LOGI(TAG,"read from client");
-	if(err==ERR_OK) {
-		netbuf_data(inbuf, (void**)&buf, &buflen);
-		if(buf) {
-
-			ESP_LOGD(TAG, "buf=[%s]", buf);
-			// default page
-			if		 (strstr(buf,"GET / ")
-					&& !strstr(buf,"Upgrade: websocket")) {
-				ESP_LOGI(TAG,"Sending /");
-				netconn_write(conn, HTML_HEADER, sizeof(HTML_HEADER)-1,NETCONN_NOCOPY);
-				netconn_write(conn, root_html_start,root_html_len,NETCONN_NOCOPY);
-				netconn_close(conn);
-				netconn_delete(conn);
-				netbuf_delete(inbuf);
-			}
-
-			// default page websocket
-			else if(strstr(buf,"GET / ")
-					 && strstr(buf,"Upgrade: websocket")) {
-				ESP_LOGI(TAG,"Requesting websocket on /");
-				ws_server_add_client(conn,buf,buflen,"/",websocket_callback);
-				netbuf_delete(inbuf);
-			}
-
-			else if(strstr(buf,"GET /main.js ")) {
-				ESP_LOGI(TAG,"Sending /main.js");
-				netconn_write(conn, JS_HEADER, sizeof(JS_HEADER)-1,NETCONN_NOCOPY);
-				netconn_write(conn, main_js_start, main_js_len,NETCONN_NOCOPY);
-				netconn_close(conn);
-				netconn_delete(conn);
-				netbuf_delete(inbuf);
-			}
-
-#if 0
-			else if(strstr(buf,"GET /bulma.css ")) {
-				ESP_LOGI(TAG,"Sending /bulma.css");
-				netconn_write(conn, CSS_HEADER, sizeof(CSS_HEADER)-1,NETCONN_NOCOPY);
-				netconn_write(conn, bulma_css_start, bulma_css_len,NETCONN_NOCOPY);
-				netconn_close(conn);
-				netconn_delete(conn);
-				netbuf_delete(inbuf);
-			}
-#endif
-
-			else if(strstr(buf,"GET /favicon.ico ")) {
-				ESP_LOGI(TAG,"Sending favicon.ico");
-				netconn_write(conn,ICO_HEADER,sizeof(ICO_HEADER)-1,NETCONN_NOCOPY);
-				netconn_write(conn,favicon_ico_start,favicon_ico_len,NETCONN_NOCOPY);
-				netconn_close(conn);
-				netconn_delete(conn);
-				netbuf_delete(inbuf);
-			}
-
-			else if(strstr(buf,"GET /")) {
-				ESP_LOGE(TAG,"Unknown request, sending error page: %s",buf);
-				netconn_write(conn, ERROR_HEADER, sizeof(ERROR_HEADER)-1,NETCONN_NOCOPY);
-				netconn_write(conn, error_html_start, error_html_len,NETCONN_NOCOPY);
-				netconn_close(conn);
-				netconn_delete(conn);
-				netbuf_delete(inbuf);
-			}
-
-			else {
-				ESP_LOGE(TAG,"Unknown request");
-				netconn_close(conn);
-				netconn_delete(conn);
-				netbuf_delete(inbuf);
-			}
-		}
-		else {
-			ESP_LOGI(TAG,"Unknown request (empty?...)");
-			netconn_close(conn);
-			netconn_delete(conn);
-			netbuf_delete(inbuf);
-		}
-	}
-	else { // if err==ERR_OK
-		ESP_LOGI(TAG,"error on read, closing connection");
-		netconn_close(conn);
-		netconn_delete(conn);
-		netbuf_delete(inbuf);
-	}
-}
-
-// handles clients when they first connect. passes to a queue
-static void server_task(void* pvParameters) {
-	const static char* TAG = "server_task";
-	char *task_parameter = (char *)pvParameters;
-	ESP_LOGI(TAG, "Start task_parameter=%s", task_parameter);
-	char url[64];
-	sprintf(url, "http://%s", task_parameter);
-	ESP_LOGI(TAG, "Starting server on %s", url);
-
-	struct netconn *conn, *newconn;
-	static err_t err;
-	client_queue = xQueueCreate(client_queue_size,sizeof(struct netconn*));
-	configASSERT( client_queue );
-
-	conn = netconn_new(NETCONN_TCP);
-	netconn_bind(conn,NULL,80);
-	netconn_listen(conn);
-	ESP_LOGI(TAG,"server listening");
-	do {
-		err = netconn_accept(conn, &newconn);
-		ESP_LOGI(TAG,"new client");
-		if(err == ERR_OK) {
-			xQueueSendToBack(client_queue,&newconn,portMAX_DELAY);
-			//http_serve(newconn);
-		}
-	} while(err == ERR_OK);
-	netconn_close(conn);
-	netconn_delete(conn);
-	ESP_LOGE(TAG,"task ending, rebooting board");
-	esp_restart();
-}
-
-// receives clients from queue, handles them
-static void server_handle_task(void* pvParameters) {
-	const static char* TAG = "server_handle_task";
-	struct netconn* conn;
-	ESP_LOGI(TAG,"task starting");
-	for(;;) {
-		xQueueReceive(client_queue,&conn,portMAX_DELAY);
-		if(!conn) continue;
-		http_serve(conn);
-	}
-	vTaskDelete(NULL);
-}
-
-
 #define RX_BUF_SIZE		128
 
 void uart_init(void) {
@@ -433,7 +213,7 @@ static void uart_tx_task(void* pvParameters)
 	char messageBuffer[512];
 
 	while(1) {
-		size_t readBytes = xMessageBufferReceive(xMessageBufferUart, messageBuffer, sizeof(messageBuffer), portMAX_DELAY );
+		size_t readBytes = xMessageBufferReceive(xMessageBufferToUart, messageBuffer, sizeof(messageBuffer), portMAX_DELAY );
 		ESP_LOGI(pcTaskGetName(NULL), "readBytes=%d", readBytes);
 		cJSON *root = cJSON_Parse(messageBuffer);
 		if (cJSON_GetObjectItem(root, "id")) {
@@ -491,7 +271,7 @@ static void uart_rx_task(void* pvParameters)
 					char *my_json_string = cJSON_PrintUnformatted(root);
 					ESP_LOGD(pcTaskGetName(NULL), "my_json_string=[%s]",my_json_string);
 					cJSON_Delete(root);
-					xMessageBufferSend(xMessageBufferMain, my_json_string, strlen(my_json_string), portMAX_DELAY);
+					xMessageBufferSend(xMessageBufferToClient, my_json_string, strlen(my_json_string), portMAX_DELAY);
 					cJSON_free(my_json_string);
 
 					ofs = 0;
@@ -514,6 +294,9 @@ static void uart_rx_task(void* pvParameters)
 	free(payload);
 	vTaskDelete(NULL);
 }
+
+void client_task(void* pvParameters);
+void server_task(void* pvParameters);
 
 void app_main() {
 	// Initialize NVS
@@ -542,10 +325,10 @@ void app_main() {
 	// Initialize uart
 	uart_init();
 
-	xMessageBufferMain = xMessageBufferCreate(1024);
-	configASSERT( xMessageBufferMain );
-	xMessageBufferUart = xMessageBufferCreate(1024);
-	configASSERT( xMessageBufferUart );
+	xMessageBufferToClient = xMessageBufferCreate(1024);
+	configASSERT( xMessageBufferToClient );
+	xMessageBufferToUart = xMessageBufferCreate(1024);
+	configASSERT( xMessageBufferToUart );
 
 	// Get the local IP address
 	esp_netif_ip_info_t ip_info;
@@ -554,51 +337,18 @@ void app_main() {
 	sprintf(cparam0, IPSTR, IP2STR(&ip_info.ip));
 	//sprintf(cparam0, "%s.local", CONFIG_MDNS_HOSTNAME);
 
+	// Start web socket server
 	ws_server_start();
-	xTaskCreate(&server_task, "server_task", 1024*2, (void *)cparam0, 9, NULL);
-	xTaskCreate(&server_handle_task, "server_handle_task", 1024*3, NULL, 6, NULL);
-	xTaskCreate(uart_tx_task, "uart_tx", 1024*4, NULL, 2, NULL);
-	xTaskCreate(uart_rx_task, "uart_rx", 1024*4, NULL, 2, NULL);
 
-	char messageBuffer[512];
+	// Start web server
+	xTaskCreate(&server_task, "server_task", 1024*2, (void *)cparam0, 5, NULL);
 
-	while(1) {
-		size_t readBytes = xMessageBufferReceive(xMessageBufferMain, messageBuffer, sizeof(messageBuffer), portMAX_DELAY );
-		ESP_LOGD(TAG, "readBytes=%d", readBytes);
-		cJSON *root = cJSON_Parse(messageBuffer);
-		if (cJSON_GetObjectItem(root, "id")) {
-			char *id = cJSON_GetObjectItem(root,"id")->valuestring;
-			ESP_LOGD(TAG, "id=%s",id);
+	// Start web client
+	xTaskCreate(&client_task, "client_task", 1024*4, NULL, 5, NULL);
 
-			// Do something when the browser started
-			if ( strcmp (id, "init") == 0) {
-			} // end of init
+	// Start uart trask
+	xTaskCreate(uart_tx_task, "uart_tx", 1024*4, NULL, 5, NULL);
+	xTaskCreate(uart_rx_task, "uart_rx", 1024*4, NULL, 5, NULL);
 
-			// Do something when the send button pressed.
-			if ( strcmp (id, "send-request") == 0) {
-				xMessageBufferSend(xMessageBufferUart, messageBuffer, readBytes, portMAX_DELAY);
-			} // end of send-request
-
-			if ( strcmp (id, "recv-request") == 0) {
-				char *payload = cJSON_GetObjectItem(root,"payload")->valuestring;
-				time_t now;
-				struct tm *tm_now;
-				now = time(NULL);
-				now = now + (CONFIG_LOCAL_TIMEZONE*60*60);
-				tm_now = localtime(&now);
-				ESP_LOGD(TAG, "DATE %04d/%02d/%02d", tm_now->tm_year + 1900, tm_now->tm_mon + 1, tm_now->tm_mday);
-				ESP_LOGD(TAG, "TIME %02d:%02d:%02d", tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec);
-
-				char out[256];
-				char DEL = 0x04;
-				//int outlen = sprintf(out,"RECEIVE%c%s%c%s", DEL, "datetime", DEL, "payload");
-				int outlen = sprintf(out,"RECEIVE%c%02d:%02d:%02d%c%s", DEL, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec, DEL, payload);
-				ESP_LOGD(TAG,"outlen=%d out-[%s]", outlen, out);
-				ws_server_send_text_all(out, outlen);
-			} // end of recv-request
-
-		}
-		cJSON_Delete(root);
-	}
-
+	vTaskDelay(100);
 }
