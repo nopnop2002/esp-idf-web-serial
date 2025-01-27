@@ -46,13 +46,22 @@ function copyData() {
 		//console.log(typeof(object_children[i]));
 		console.log(object_children[i].innerText);
 		str += object_children[i].innerText;
+		str += "\r\n";
 	}
 
 	if(navigator.clipboard){
 		console.log("clipboard.writeText");
 		navigator.clipboard.writeText(str);
 	} else {
-		alert("This browser is not supported");
+		// https://qiita.com/yamayamasou/items/a53bd71894a6058c5f30
+		console.log("clipboard not found");
+		const textarea = document.createElement('textarea');
+		textarea.value = str;
+		document.body.appendChild(textarea);
+		textarea.select();
+		const result = document.execCommand('copy');
+		document.body.removeChild(textarea);
+		//alert("This browser is not supported");
 	}
 }
 
