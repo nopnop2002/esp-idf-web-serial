@@ -84,6 +84,8 @@ idf.py flash monitor
 - Launch a web browser   
 Enter the following in the address bar of your web browser.   
 You can communicate to Arduino-UNO using browser.   
+The Change button changes the number of lines displayed.   
+The Copy button copies the received data to the clipboard.   
 ```
 http:://{IP of ESP32}/
 or
