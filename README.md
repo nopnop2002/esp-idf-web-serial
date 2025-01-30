@@ -97,3 +97,11 @@ http://esp32-server.local/
 # WEB Pages
 WEB Pages are stored in the html folder.   
 You cam change root.html as you like.   
+
+# References
+
+https://github.com/nopnop2002/esp-idf-uart2bt
+
+https://github.com/nopnop2002/esp-idf-uart2udp
+
+https://github.com/nopnop2002/esp-idf-uart2mqtt
