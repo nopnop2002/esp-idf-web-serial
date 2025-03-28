@@ -1,6 +1,5 @@
 # esp-idf-web-serial
-
-This project is a Serial Monitor for esp-idf that can be accessed remotely via a web browser.   
+This project is a wireless serial monitor using the ESP32 that can be accessed remotely via a web browser.   
 I used [this](https://github.com/Molorius/esp32-websocket) component.   
 This component can communicate directly with the browser.   
 It's a great job.   
