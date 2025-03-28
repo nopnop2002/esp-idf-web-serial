@@ -5,8 +5,7 @@ I used [this](https://github.com/Molorius/esp32-websocket) component.
 This component can communicate directly with the browser.   
 It's a great job.   
 I referred to [this](https://github.com/ayushsharma82/WebSerial).   
-![Image](https://github.com/user-attachments/assets/d4f0dfc9-2784-4b46-937a-c1276d1a897a)
-
+![Image](https://github.com/user-attachments/assets/7c17fa69-1b9e-4f52-8982-9cc85c0ea8d3)
 ![Web-Serial](https://user-images.githubusercontent.com/6020549/204442158-0e8e1b11-caa8-4937-b830-99d331ca3fa6.jpg)
 
 
