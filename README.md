@@ -4,10 +4,11 @@ This project is a Serial Monitor for esp-idf that can be accessed remotely via a
 I used [this](https://github.com/Molorius/esp32-websocket) component.   
 This component can communicate directly with the browser.   
 It's a great job.   
+![Image](https://github.com/user-attachments/assets/d4f0dfc9-2784-4b46-937a-c1276d1a897a)
 
+I referred to [this](https://github.com/ayushsharma82/WebSerial).   
 ![Web-Serial](https://user-images.githubusercontent.com/6020549/204442158-0e8e1b11-caa8-4937-b830-99d331ca3fa6.jpg)
 
-I referred to [this](https://github.com/ayushsharma82/WebSerial).
 
 
 # Software requirements
